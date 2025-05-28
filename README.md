@@ -341,4 +341,4 @@ Response:
 
 5. Access the application
    - Backend API: http://localhost:3000
-   - Frontend: http://localhost:3001
+   - Frontend: http://localhost:3001 || http://localhost:5317
