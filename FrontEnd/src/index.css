@@ -196,7 +196,7 @@ layer(base);
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-[#527853c2] text-white dark:bg-brand-500/[0.12] dark:text-brand-400;
 }
 
 @utility menu-item-inactive {
@@ -208,7 +208,7 @@ layer(base);
 }
 
 @utility menu-item-icon-active {
-  @apply text-brand-500 dark:text-brand-400;
+  @apply text-white dark:text-brand-400;
 }
 
 @utility menu-item-icon-size {
@@ -226,7 +226,7 @@ layer(base);
 }
 
 @utility menu-item-arrow-active {
-  @apply rotate-180 text-brand-500 dark:text-brand-400;
+  @apply rotate-180 text-[#527853] dark:text-brand-400;
 }
 
 @utility menu-item-arrow-inactive {

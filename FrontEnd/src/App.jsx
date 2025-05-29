@@ -9,8 +9,6 @@ import Alerts from "./pages/UiElements/Alerts.js";
 import Badges from "./pages/UiElements/Badges.js";
 import Avatars from "./pages/UiElements/Avatars.js";
 import Buttons from "./pages/UiElements/Buttons.js";
-import LineChart from "./pages/Charts/LineChart.js";
-import BarChart from "./pages/Charts/BarChart.js";
 import Calendar from "./pages/Calendar.jsx";
 import BasicTables from "./pages/Tables/BasicTables.js";
 import FormElements from "./pages/Forms/FormElements.js";
@@ -40,16 +38,12 @@ export default function App() {
             <Route path="/basic-tables" element={<BasicTables />} />
 
             {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
+            {/* <Route path="/alerts" element={<Alerts />} />
             <Route path="/avatars" element={<Avatars />} />
             <Route path="/badge" element={<Badges />} />
             <Route path="/buttons" element={<Buttons />} />
             <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+            <Route path="/videos" element={<Videos />} /> */}
           </Route>
 
           {/* Auth Layout */}
