@@ -7,12 +7,6 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 import { Modal } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
 
-const PageMeta = ({ title, description }) => (
-  <Helmet>
-    <title>{title}</title>
-    <meta name="description" content={description} />
-  </Helmet>
-);
 
 export const AppWrapper = ({ children }) => (
   <HelmetProvider>{children}</HelmetProvider>
@@ -193,10 +187,7 @@ const Calendar = () => {
 
   return (
     <>
-      <PageMeta
-        title="React.js Calendar Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Calendar Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
-      />
+     
       <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="custom-calendar">
           <FullCalendar
@@ -215,7 +206,7 @@ const Calendar = () => {
             eventContent={renderEventContent}
             customButtons={{
               addEventButton: {
-                text: "Add Meal +",
+                text: "Add Meal +" ,
                 click: openModal,
               },
             }}
@@ -414,7 +405,7 @@ const Calendar = () => {
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-[#527853] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
               >
                 {selectedEvent ? "Update Meal" : "Add Meal"}
               </button>
