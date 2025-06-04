@@ -2,13 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn.jsx";
 import SignUp from "./pages/AuthPages/SignUp.jsx";
 import NotFound from "./pages/OtherPage/NotFound.js";
-import UserProfiles from "./pages/UserProfiles.js";
-import Videos from "./pages/UiElements/Videos.js";
-import Images from "./pages/UiElements/Images.js";
-import Alerts from "./pages/UiElements/Alerts.js";
-import Badges from "./pages/UiElements/Badges.js";
-import Avatars from "./pages/UiElements/Avatars.js";
-import Buttons from "./pages/UiElements/Buttons.js";
+import UserProfiles from "./pages/UserProfiles.jsx";
 import Calendar from "./pages/Calendar.jsx";
 import BasicTables from "./pages/Tables/BasicTables.js";
 import FormElements from "./pages/Forms/FormElements.js";
@@ -36,14 +30,6 @@ export default function App() {
 
             {/* Tables */}
             <Route path="/basic-tables" element={<BasicTables />} />
-
-            {/* Ui Elements */}
-            {/* <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} /> */}
           </Route>
 
           {/* Auth Layout */}

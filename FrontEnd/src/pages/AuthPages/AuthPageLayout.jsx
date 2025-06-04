@@ -3,11 +3,7 @@ import GridShape from "../../components/common/GridShape";
 import { Link } from "react-router";
 import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }) {
   return (
     <div className="relative p-6 bg-white z-1 dark:bg-gray-900 sm:p-0">
       <div className="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-gray-900 sm:p-0">
@@ -17,10 +13,9 @@ export default function AuthLayout({
             <GridShape />
             <div className="flex flex-col items-center max-w-xs">
               <Link to="/" className="block mb-4">
-              
                 <h1 className="text-5xl text-white">NutiTrack</h1>
               </Link>
-              <p className="text-center text-gray-400  text-white">
+              <p className="text-center text-gray-400 text-white">
                 Free and Open-Source Tailwind CSS Admin Dashboard Template
               </p>
             </div>
