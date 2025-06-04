@@ -15,3 +15,11 @@ export const loginUser = (formData) => {
     },
   });
 };
+
+export const updateUserProfile = (formData) => {
+  return api.patch("/auth/update-profile", formData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};

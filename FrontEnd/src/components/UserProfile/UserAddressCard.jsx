@@ -5,57 +5,97 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import api from "../../api/axiosConfig";
-
+import { updateUserProfile } from "../../api/authService.js";
 export default function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
 
-  const [form, setForm] = useState({
-    country: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    taxId: "",
+ 
+const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    bio: "",
+    position: "user",
   });
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.get("/auth/me");
-        const data = res.data.data.user;
-        setUser(data);
-        setForm({
-          country: data.address?.country || "",
-          city: data.address?.city || "",
-          state: data.address?.state || "",
-          postalCode: data.address?.postalCode || "",
-          taxId: data.address?.taxId || "",
-        });
-      } catch (err) {
-        console.error("Failed to load user profile", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await api.get("/auth/me");
+  //       const data = res.data.data.user;
+  //       setUser(data);
+  //       setForm({
+  //         firstName: data.firstName || "",
+  //         lastName: data.lastName || "",
+  //         email: data.email || "",
+  //         phone: data.phone || "",
+  //         bio: data.bio || "",
+  //         position: data.position || "user",
+  //       });
 
-    fetchUser();
-  }, []);
+  //     } catch (err) {
+  //       console.error("Failed to load user profile", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchUser();
+  // }, []);
+const fetchUser = async () => {
+  try {
+    const res = await api.get("/auth/me");
+    const data = res.data.data.user;
+    setUser(data);
+    setForm({
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
+      email: data.email || "",
+      phone: data.phone || "",
+      bio: data.bio || "",
+      position: data.position || "user",
+    });
+  } catch (err) {
+    console.error("Failed to load user profile", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchUser();
+}, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    console.log("Saving address changes:", form);
-    // TODO: POST/PUT request to update API
+ const handleSave = async (e) => {
+  e.preventDefault();
+  try {
+    await updateUserProfile(form);
+    await fetchUser(); // ✅ Refresh profile data after update
     closeModal();
-  };
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+  }
+};
 
+// const handleSave = async (e) => {
+//   e.preventDefault(); 
+//   try {
+//     await updateUserProfile(form);
+//     closeModal();
+//   } catch (error) {
+//     console.error("Failed to update profile:", error);
+//   }
+// };
   if (loading) return <div className="p-5 text-sm text-gray-500">Loading profile...</div>;
   if (!user) return <div className="p-5 text-sm text-red-500">User not found.</div>;
-
   return (
     <>
       {/* Profile Card */}
@@ -70,7 +110,7 @@ export default function UserAddressCard() {
             <div>
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{user.fullName}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.position || "User"} &nbsp;|&nbsp; {form.city}, {form.state}
+                {user.position || "User"} &nbsp;
               </p>
             </div>
           </div>
@@ -84,7 +124,7 @@ export default function UserAddressCard() {
       <div className="bg-white border border-gray-200 rounded-2xl p-6 dark:border-gray-800 dark:bg-white/[0.03] mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800 dark:text-white text-md">Personal Information</h3>
-          
+
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-10 text-sm text-gray-700 dark:text-white/90">
           <div>
@@ -110,75 +150,75 @@ export default function UserAddressCard() {
         </div>
       </div>
 
-      {/* Address Info */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800 dark:text-white text-md">Address</h3>
-         
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-10 text-sm text-gray-700 dark:text-white/90">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Country</p>
-            <p className="font-medium">{form.country}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">City / State</p>
-            <p className="font-medium">{form.city}, {form.state}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Postal Code</p>
-            <p className="font-medium">{form.postalCode}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Tax ID</p>
-            <p className="font-medium">{form.taxId}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal */}
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
+     <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="relative w-full p-4 bg-white rounded-3xl dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Address
+              Edit Profile
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your address details below.
+              Update your profile details below.
             </p>
           </div>
+
           <form className="flex flex-col">
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+
                 <div>
-                  <Label>Country</Label>
-                  <Input name="country" value={form.country} onChange={handleChange} />
+                  <Label>First Name</Label>
+                  <Input name="firstName" value={form.firstName} onChange={handleChange} />
                 </div>
+
                 <div>
-                  <Label>City</Label>
-                  <Input name="city" value={form.city} onChange={handleChange} />
+                  <Label>Last Name</Label>
+                  <Input name="lastName" value={form.lastName} onChange={handleChange} />
                 </div>
+
                 <div>
-                  <Label>State</Label>
-                  <Input name="state" value={form.state} onChange={handleChange} />
+                  <Label>Email</Label>
+                  <Input name="email" value={form.email} onChange={handleChange} type="email" />
                 </div>
+
                 <div>
-                  <Label>Postal Code</Label>
-                  <Input name="postalCode" value={form.postalCode} onChange={handleChange} />
+                  <Label>Phone</Label>
+                  <Input name="phone" value={form.phone} onChange={handleChange} />
                 </div>
+
                 <div>
-                  <Label>Tax ID</Label>
-                  <Input name="taxId" value={form.taxId} onChange={handleChange} />
+                  <Label>Bio</Label>
+                  <Input name="bio" value={form.bio} onChange={handleChange} />
                 </div>
+
+                <div>
+                  <Label>Position</Label>
+                  <select
+                    name="position"
+                    value={form.position}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500 dark:text-white dark:bg-gray-800 dark:border-gray-600"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="moderator">Moderator</option>
+                  </select>
+                </div>
+
               </div>
             </div>
+
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>Cancel</Button>
-              <Button size="sm" onClick={handleSave}>Save Changes</Button>
+              <Button size="sm" variant="outline" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" onClick={handleSave}>
+                Save Changes
+              </Button>
             </div>
           </form>
         </div>
       </Modal>
+
     </>
   );
 }
