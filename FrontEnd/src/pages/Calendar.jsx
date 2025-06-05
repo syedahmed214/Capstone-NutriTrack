@@ -1,12 +1,13 @@
+
 import { useState, useRef, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { HelmetProvider, Helmet } from "react-helmet-async";
-import { Modal } from "../components/ui/modal";
-import { useModal } from "../hooks/useModal";
-
+import { HelmetProvider } from "react-helmet-async";
+import { Modal } from "../components/ui/Modal/index.jsx";
+import { useModal } from "../hooks/useModal.js";
+import { addMeal, getAllMeals, deleteMeal, updateMeal } from "../api/mealApi";
 
 export const AppWrapper = ({ children }) => (
   <HelmetProvider>{children}</HelmetProvider>
@@ -25,63 +26,60 @@ const Calendar = () => {
   const [eventStartDate, setEventStartDate] = useState("");
   const [eventEndDate, setEventEndDate] = useState("");
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const calendarRef = useRef(null);
   const { isOpen, openModal, closeModal } = useModal();
 
   const mealTypes = {
     Breakfast: "breakfast",
-    Lunch: "lunch", 
+    Lunch: "lunch",
     Dinner: "dinner",
     Snack: "snack",
   };
 
+  // Fetch meals from API
+  const fetchMeals = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllMeals();
+      
+      if (response.data.success) {
+        const mealsData = response.data.data;
+        
+        // Transform API data to FullCalendar events format
+        const calendarEvents = mealsData.map((meal) => ({
+          id: meal._id,
+          title: meal.name,
+          start: meal.date.split('T')[0], // Extract date part only
+          allDay: true,
+          extendedProps: {
+            mealType: meal.type,
+            ingredients: meal.ingredients,
+            calories: meal.calories.toString(),
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fats: meal.fats,
+            notes: meal.notes,
+          },
+        }));
+        
+        setEvents(calendarEvents);
+      } else {
+        setError("Failed to fetch meals");
+      }
+    } catch (error) {
+      console.error("Error fetching meals:", error);
+      setError("Failed to load meals. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load meals on component mount
   useEffect(() => {
-    // Initialize with some sample meals
-    setEvents([
-      {
-        id: "1",
-        title: "Grilled Chicken Salad",
-        start: new Date().toISOString().split("T")[0],
-        extendedProps: { 
-          mealType: "Lunch",
-          ingredients: "Chicken breast, lettuce, tomatoes, cucumber",
-          calories: "350",
-          protein: "35g",
-          carbs: "15g", 
-          fats: "12g",
-          notes: "Healthy and light meal"
-        },
-      },
-      {
-        id: "2", 
-        title: "Oatmeal with Berries",
-        start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-        extendedProps: { 
-          mealType: "Breakfast",
-          ingredients: "Oats, blueberries, strawberries, honey",
-          calories: "280",
-          protein: "8g",
-          carbs: "55g",
-          fats: "4g", 
-          notes: "High fiber breakfast"
-        },
-      },
-      {
-        id: "3",
-        title: "Salmon with Rice",
-        start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
-        end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
-        extendedProps: { 
-          mealType: "Dinner",
-          ingredients: "Salmon fillet, brown rice, broccoli",
-          calories: "520",
-          protein: "40g",
-          carbs: "45g",
-          fats: "18g",
-          notes: "Omega-3 rich dinner"
-        },
-      },
-    ]);
+    fetchMeals();
   }, []);
 
   const handleDateSelect = (selectInfo) => {
@@ -107,52 +105,111 @@ const Calendar = () => {
     openModal();
   };
 
-  const handleAddOrUpdateEvent = () => {
-    if (selectedEvent) {
-      // Update existing meal
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === selectedEvent.id
-            ? {
-                ...event,
-                title: mealName,
-                start: eventStartDate,
-                end: eventEndDate,
-                extendedProps: { 
-                  mealType: mealType,
-                  ingredients: ingredients,
-                  calories: calories,
-                  protein: protein,
-                  carbs: carbs,
-                  fats: fats,
-                  notes: notes
-                },
-              }
-            : event
-        )
-      );
-    } else {
-      // Add new meal
-      const newEvent = {
-        id: Date.now().toString(),
-        title: mealName,
-        start: eventStartDate,
-        end: eventEndDate,
-        allDay: true,
-        extendedProps: { 
-          mealType: mealType,
-          ingredients: ingredients,
-          calories: calories,
-          protein: protein,
-          carbs: carbs,
-          fats: fats,
-          notes: notes
-        },
-      };
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
+  const handleAddOrUpdateEvent = async () => {
+    const mealPayload = {
+      name: mealName,
+      date: eventStartDate,
+      type: mealType,
+      ingredients,
+      calories: parseInt(calories) || 0,
+      protein,
+      carbs,
+      fats,
+      notes,
+    };
+
+    try {
+      if (selectedEvent) {
+        // Update existing meal via API
+        const response = await updateMeal(selectedEvent.id, mealPayload);
+        
+        if (response.data.success) {
+          const updatedMeal = response.data.data;
+          
+          // Update the event in local state
+          setEvents((prev) =>
+            prev.map((event) =>
+              event.id === selectedEvent.id
+                ? {
+                  ...event,
+                  title: updatedMeal.name,
+                  start: updatedMeal.date.split('T')[0],
+                  extendedProps: {
+                    mealType: updatedMeal.type,
+                    ingredients: updatedMeal.ingredients,
+                    calories: updatedMeal.calories.toString(),
+                    protein: updatedMeal.protein,
+                    carbs: updatedMeal.carbs,
+                    fats: updatedMeal.fats,
+                    notes: updatedMeal.notes,
+                  },
+                }
+                : event
+            )
+          );
+        } else {
+          setError("Failed to update meal. Please try again.");
+          return;
+        }
+      } else {
+        // Add new meal
+        const response = await addMeal(mealPayload);
+        
+        if (response.data.success) {
+          const newMeal = response.data.data;
+          
+          const newEvent = {
+            id: newMeal._id,
+            title: newMeal.name,
+            start: newMeal.date.split('T')[0],
+            allDay: true,
+            extendedProps: {
+              mealType: newMeal.type,
+              ingredients: newMeal.ingredients,
+              calories: newMeal.calories.toString(),
+              protein: newMeal.protein,
+              carbs: newMeal.carbs,
+              fats: newMeal.fats,
+              notes: newMeal.notes,
+            },
+          };
+
+          setEvents((prev) => [...prev, newEvent]);
+        } else {
+          setError("Failed to add meal. Please try again.");
+          return;
+        }
+      }
+
+      closeModal();
+      resetModalFields();
+    } catch (error) {
+      console.error("Failed to add/update meal", error);
+      setError("Failed to save meal. Please try again.");
     }
-    closeModal();
-    resetModalFields();
+  };
+
+  const handleDeleteMeal = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      const response = await deleteMeal(selectedEvent.id);
+      
+      if (response.data.success) {
+        // Remove the meal from local state
+        setEvents((prev) =>
+          prev.filter((event) => event.id !== selectedEvent.id)
+        );
+        
+        closeModal();
+        resetModalFields();
+      } else {
+        setError("Failed to delete meal. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to delete meal", error);
+      setError("Failed to delete meal. Please try again.");
+    }
   };
 
   const resetModalFields = () => {
@@ -170,25 +227,70 @@ const Calendar = () => {
   };
 
   const renderEventContent = (eventInfo) => {
-    const mealTypeClass = `fc-bg-${eventInfo.event.extendedProps.mealType?.toLowerCase()}`;
+    const mealType = eventInfo.event.extendedProps.mealType;
+    const mealTitle = eventInfo.event.title;
+    
+    const getMealTypeColor = (type) => {
+      switch(type?.toLowerCase()) {
+        case 'breakfast': return 'bg-orange-100 text-orange-700 border-orange-200';
+        case 'lunch': return 'bg-green-100 text-green-700 border-green-200';
+        case 'dinner': return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'snack': return 'bg-purple-100 text-purple-700 border-purple-200';
+        default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      }
+    };
+
     return (
-      <div
-        className={`event-fc-color flex fc-event-main ${mealTypeClass} p-1 rounded-sm`}
-      >
-        <div className="fc-daygrid-event-dot"></div>
-        <div className="fc-event-time">{eventInfo.timeText}</div>
-        <div className="fc-event-title">{eventInfo.event.title}</div>
-        <div className="fc-event-meal-type text-xs opacity-75">
-          {eventInfo.event.extendedProps.mealType}
+      <div className="event-fc-color fc-event-main p-2 rounded-sm overflow-hidden">
+        <div className="flex items-center justify-between gap-1 mb-1">
+          <div className="fc-event-time text-xs opacity-75">{eventInfo.timeText}</div>
+          {mealType && (
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border ${getMealTypeColor(mealType)} whitespace-nowrap`}>
+              {mealType}
+            </span>
+          )}
         </div>
+        <div className="fc-event-title font-medium text-sm leading-tight">
+          {mealTitle}
+        </div>
+        {eventInfo.event.extendedProps.calories && (
+          <div className="text-xs text-gray-600 mt-1">
+            {eventInfo.event.extendedProps.calories} cal
+          </div>
+        )}
       </div>
     );
   };
 
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading meals...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-500">{error}</div>
+          <button 
+            onClick={fetchMeals}
+            className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-     
-      <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="custom-calendar">
           <FullCalendar
             ref={calendarRef}
@@ -206,208 +308,114 @@ const Calendar = () => {
             eventContent={renderEventContent}
             customButtons={{
               addEventButton: {
-                text: "Add Meal +" ,
+                text: "Add Meal +",
                 click: openModal,
               },
             }}
           />
         </div>
-        <Modal
-          isOpen={isOpen}
-          onClose={closeModal}
-          className="max-w-[700px] p-6 lg:p-10"
-        >
-          <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
-            <div>
-              <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                {selectedEvent ? "Edit Meal" : "Add Meal"}
-              </h5>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Plan your meals: add nutritional information and schedule your daily meals
-              </p>
+
+        {/* ✅ Full Modal Meal Form */}
+        <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] p-6 lg:p-10">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+              {selectedEvent ? "Edit Meal" : "Add Meal"}
+            </h2>
+
+            <input
+              type="text"
+              placeholder="Meal Name"
+              value={mealName}
+              onChange={(e) => setMealName(e.target.value)}
+              className="w-full border rounded p-2"
+            />
+
+            <div className="flex gap-4 flex-wrap">
+              {Object.entries(mealTypes).map(([label, value]) => (
+                <label key={value} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="mealType"
+                    value={label}
+                    checked={mealType === label}
+                    onChange={() => setMealType(label)}
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
-            <div className="mt-8">
-              <div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Meal Name
-                  </label>
-                  <input
-                    id="meal-name"
-                    type="text"
-                    value={mealName}
-                    onChange={(e) => setMealName(e.target.value)}
-                    placeholder="e.g., Grilled Chicken Salad"
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Meal Type
-                </label>
-                <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                  {Object.entries(mealTypes).map(([key, value]) => (
-                    <div key={key} className="n-chk">
-                      <div
-                        className={`form-check form-check-${value} form-check-inline`}
-                      >
-                        <label
-                          className="flex items-center text-sm text-gray-700 form-check-label dark:text-gray-400"
-                          htmlFor={`modal${key}`}
-                        >
-                          <span className="relative">
-                            <input
-                              className="sr-only form-check-input"
-                              type="radio"
-                              name="meal-type"
-                              value={key}
-                              id={`modal${key}`}
-                              checked={mealType === key}
-                              onChange={() => setMealType(key)}
-                            />
-                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
-                              <span
-                                className={`h-2 w-2 rounded-full bg-white ${
-                                  mealType === key ? "block" : "hidden"
-                                }`}
-                              ></span>
-                            </span>
-                          </span>
-                          {key}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Ingredients
-                </label>
-                <textarea
-                  id="ingredients"
-                  value={ingredients}
-                  onChange={(e) => setIngredients(e.target.value)}
-                  placeholder="List main ingredients separated by commas"
-                  rows={3}
-                  className="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
+            <textarea
+              placeholder="Ingredients"
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+              className="w-full border rounded p-2"
+              rows={2}
+            />
 
-              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Calories
-                  </label>
-                  <input
-                    id="calories"
-                    type="number"
-                    value={calories}
-                    onChange={(e) => setCalories(e.target.value)}
-                    placeholder="350"
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Protein (g)
-                  </label>
-                  <input
-                    id="protein"
-                    type="text"
-                    value={protein}
-                    onChange={(e) => setProtein(e.target.value)}
-                    placeholder="25g"
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Carbs (g)
-                  </label>
-                  <input
-                    id="carbs"
-                    type="text"
-                    value={carbs}
-                    onChange={(e) => setCarbs(e.target.value)}
-                    placeholder="30g"
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Fats (g)
-                  </label>
-                  <input
-                    id="fats"
-                    type="text"
-                    value={fats}
-                    onChange={(e) => setFats(e.target.value)}
-                    placeholder="12g"
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any additional notes about this meal..."
-                  rows={2}
-                  className="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Meal Date
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-start-date"
-                    type="date"
-                    value={eventStartDate}
-                    onChange={(e) => setEventStartDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <input
+                placeholder="Calories"
+                type="number"
+                value={calories}
+                onChange={(e) => setCalories(e.target.value)}
+                className="border rounded p-2"
+              />
+              <input
+                placeholder="Protein"
+                value={protein}
+                onChange={(e) => setProtein(e.target.value)}
+                className="border rounded p-2"
+              />
+              <input
+                placeholder="Carbs"
+                value={carbs}
+                onChange={(e) => setCarbs(e.target.value)}
+                className="border rounded p-2"
+              />
+              <input
+                placeholder="Fats"
+                value={fats}
+                onChange={(e) => setFats(e.target.value)}
+                className="border rounded p-2"
+              />
             </div>
-            <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+
+            <textarea
+              placeholder="Notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full border rounded p-2"
+              rows={2}
+            />
+
+            <input
+              type="date"
+              value={eventStartDate}
+              onChange={(e) => setEventStartDate(e.target.value)}
+              className="w-full border rounded p-2"
+            />
+
+            <div className="flex gap-3 justify-end pt-4">
               {selectedEvent && (
                 <button
-                  onClick={() => {
-                    setEvents(events.filter(event => event.id !== selectedEvent.id));
-                    closeModal();
-                    resetModalFields();
-                  }}
-                  type="button"
-                  className="flex w-full justify-center rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 sm:w-auto"
+                  onClick={handleDeleteMeal}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
                 >
-                  Delete Meal
+                  Delete
                 </button>
               )}
               <button
                 onClick={closeModal}
-                type="button"
-                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+                className="px-4 py-2 border rounded"
               >
-                Close
+                Cancel
               </button>
               <button
                 onClick={handleAddOrUpdateEvent}
-                type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-[#527853] px-4 py-2.5 text-sm font-medium text-white sm:w-auto"
+                className="px-4 py-2 bg-green-600 text-white rounded"
               >
-                {selectedEvent ? "Update Meal" : "Add Meal"}
+                {selectedEvent ? "Update" : "Add"}
               </button>
             </div>
           </div>

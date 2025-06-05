@@ -1,7 +1,6 @@
 import React from "react";
-import GridShape from "../../components/common/GridShape";
+import GridShape from "../../components/common/GridShape.jsx";
 import { Link } from "react-router";
-import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
 
 export default function AuthLayout({ children }) {
   return (
@@ -15,14 +14,9 @@ export default function AuthLayout({ children }) {
               <Link to="/" className="block mb-4">
                 <h1 className="text-5xl text-white">NutiTrack</h1>
               </Link>
-              <p className="text-center text-gray-400 text-white">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
-              </p>
+              
             </div>
           </div>
-        </div>
-        <div className="fixed z-50 hidden bottom-6 right-6 sm:block">
-          <ThemeTogglerTwo />
         </div>
       </div>
     </div>

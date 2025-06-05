@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { useModal } from "../../hooks/useModal";
-import { Modal } from "../ui/modal";
-import Button from "../ui/button/Button";
-import Input from "../form/input/InputField";
-import Label from "../form/Label";
+import { useModal } from "../../hooks/useModal.js";
+import { Modal } from "../ui/Modal/index.jsx";
+import Button from "../ui/button/Button.jsx";
+import Input from "../form/input/InputField.jsx";
+import Label from "../form/Label.jsx";
 import api from "../../api/axiosConfig";
 import { updateUserProfile } from "../../api/authService.js";
 export default function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
-
  
 const [form, setForm] = useState({
     firstName: "",
@@ -21,31 +20,6 @@ const [form, setForm] = useState({
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const res = await api.get("/auth/me");
-  //       const data = res.data.data.user;
-  //       setUser(data);
-  //       setForm({
-  //         firstName: data.firstName || "",
-  //         lastName: data.lastName || "",
-  //         email: data.email || "",
-  //         phone: data.phone || "",
-  //         bio: data.bio || "",
-  //         position: data.position || "user",
-  //       });
-
-  //     } catch (err) {
-  //       console.error("Failed to load user profile", err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchUser();
-  // }, []);
 const fetchUser = async () => {
   try {
     const res = await api.get("/auth/me");
@@ -103,7 +77,7 @@ useEffect(() => {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-5">
             <img
-              src={user.profileImage ? `http://localhost:5000${user.profileImage}` : "/default-avatar.png"}
+              src={user.profileImage ? `http://localhost:5000${user.profileImage}` : "/images/user/owner.jpg"}
               alt={user.fullName}
               className="w-16 h-16 rounded-full object-cover border border-gray-300"
             />

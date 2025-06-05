@@ -1,5 +1,4 @@
 import React from "react";
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics.jsx";
 import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart.jsx";
 import RecentOrders from "../../components/ecommerce/RecentOrders.jsx";
 
@@ -7,7 +6,6 @@ export default function Home() {
   return (
     <div className="w-full">
       <div className="col-span-full space-y-6 xl:col-span-7">
-        <EcommerceMetrics />
         <MonthlySalesChart />
       </div>
 

@@ -1,4 +1,4 @@
-import GridShape from "../../components/common/GridShape";
+import GridShape from "../../components/common/GridShape.jsx";
 import { Link } from "react-router";
 
 export default function NotFound() {

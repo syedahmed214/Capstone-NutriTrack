@@ -1,4 +1,4 @@
-import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import PageBreadcrumb from "../components/common/PageBreadCrumb.jsx";
 import UserAddressCard from "../components/UserProfile/UserAddressCard.jsx";
 
 export default function UserProfiles() {

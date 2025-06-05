@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
-import Label from "../form/Label";
-import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
-import Button from "../ui/button/Button";
+import Label from "../form/Label.jsx";
+import Input from "../form/input/InputField.jsx";
+import Checkbox from "../form/input/Checkbox.jsx";
+import Button from "../ui/button/Button.jsx";
 import { loginUser } from "../../api/authService.js";
 import { useNavigate } from "react-router-dom";
 

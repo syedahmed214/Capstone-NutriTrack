@@ -2,14 +2,15 @@ import { registerUser } from "../../api/authService.js";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
-import Label from "../form/Label";
-import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
+import Label from "../form/Label.jsx";
+import Input from "../form/input/InputField.jsx";
+import Checkbox from "../form/input/Checkbox.jsx";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { registerSchemaYup } from "../../validation/registerSchemaYup";
 
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const initialValues = {
@@ -24,7 +25,20 @@ export default function SignUpForm() {
     profileImage: null,
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
+    console.log("🔥 HANDLESUBMIT CALLED - Form submitted with values:", values);
+    
+    // Check if terms are accepted
+    if (!values.isChecked) {
+      console.log("❌ Terms not accepted");
+      setFieldError("isChecked", "You must agree to the Terms and Conditions");
+      setSubmitting(false);
+      return;
+    }
+
+    console.log("✅ Terms accepted, proceeding with submission");
+    setIsSubmitting(true);
+    
     const formData = new FormData();
     formData.append("firstName", values.fname);
     formData.append("lastName", values.lname);
@@ -33,13 +47,23 @@ export default function SignUpForm() {
     formData.append("phone", values.phone);
     formData.append("bio", values.bio);
     formData.append("position", values.position);
-    formData.append("profileImage", values.profileImage);
+    
+    // Only append profile image if it exists
+    if (values.profileImage) {
+      formData.append("profileImage", values.profileImage);
+    }
 
     try {
+      console.log("Attempting to register user...");
       await registerUser(formData);
+      console.log("Registration successful, navigating to signin...");
       navigate("/signin");
     } catch (err) {
-      alert("Registration failed: " + err.response?.data?.message || err.message);
+      console.error("Registration error:", err);
+      alert("Registration failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -71,8 +95,17 @@ export default function SignUpForm() {
             validationSchema={registerSchemaYup}
             onSubmit={handleSubmit}
           >
-            {({ values, setFieldValue }) => (
-              <Form encType="multipart/form-data">
+            {({ values, setFieldValue, isSubmitting: formikSubmitting, errors, handleSubmit: formikHandleSubmit }) => {
+              
+              return (
+                              <Form 
+                  encType="multipart/form-data"
+                  onSubmit={(e) => {
+                    console.log("🚀 Form onSubmit event triggered");
+                    e.preventDefault();
+                    formikHandleSubmit(e);
+                  }}
+                >
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
@@ -102,7 +135,8 @@ export default function SignUpForm() {
                         type={showPassword ? "text" : "password"}
                         as={Input}
                       />
-                      <span
+                      <button
+                        type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                       >
@@ -111,7 +145,7 @@ export default function SignUpForm() {
                         ) : (
                           <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                         )}
-                      </span>
+                      </button>
                     </div>
                     <ErrorMessage name="password" component="div" className="text-error-500 text-sm mt-1" />
                   </div>
@@ -145,7 +179,12 @@ export default function SignUpForm() {
                     <input
                       name="profileImage"
                       type="file"
-                      onChange={(event) => setFieldValue("profileImage", event.currentTarget.files[0])}
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.currentTarget.files[0];
+                        console.log("File selected:", file);
+                        setFieldValue("profileImage", file);
+                      }}
                       className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer dark:text-gray-400 dark:border-gray-600 dark:placeholder-gray-400"
                     />
                   </div>
@@ -154,7 +193,10 @@ export default function SignUpForm() {
                     <Checkbox
                       className="w-5 h-5"
                       checked={values.isChecked}
-                      onChange={(value) => setFieldValue("isChecked", value)}
+                      onChange={(value) => {
+                        console.log("Checkbox changed:", value);
+                        setFieldValue("isChecked", value);
+                      }}
                     />
                     <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
                       By creating an account you agree to the{" "}
@@ -167,14 +209,29 @@ export default function SignUpForm() {
                   <div>
                     <button
                       type="submit"
-                      className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+                      disabled={isSubmitting || formikSubmitting}
+                      onClick={(e) => {
+                        console.log("🖱️ Submit button clicked");
+                        console.log("🖱️ Button type:", e.currentTarget.type);
+                        console.log("🖱️ Form valid:", Object.keys(errors).length === 0);
+                        console.log("🖱️ Current errors:", errors);
+                        console.log("🖱️ Values:", values);
+                        
+                        // Don't prevent default here - let Formik handle it
+                      }}
+                      className={`flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs ${
+                        isSubmitting || formikSubmitting
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-brand-500 hover:bg-brand-600"
+                      }`}
                     >
-                      Sign Up
+                      {isSubmitting || formikSubmitting ? "Signing Up..." : "Sign Up"}
                     </button>
                   </div>
                 </div>
-              </Form>
-            )}
+                              </Form>
+              );
+            }}
           </Formik>
 
           <div className="mt-5">
